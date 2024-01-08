@@ -506,6 +506,10 @@ function sb_ajax_execute() {
             return sb_json_response(sb_tags_get());
         case 'open-ai-delete-training':
             return sb_json_response(open_ai_delete_training());
+        case 'add-agent-rating':
+            return sb_json_response(add_agent_rating($_POST['user_id'], $_POST['rating'], $_POST['convid'], 0));
+        case 'close-chat':
+            return sb_json_response(close_chat($_POST['user_id'], $_POST['convid'], 0));
         default:
             return '["error", "Support Board Error [ajax.php]: No functions found with name: ' . $function . '."]';
     }

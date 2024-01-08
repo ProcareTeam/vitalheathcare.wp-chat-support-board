@@ -50,6 +50,7 @@
     var articles_page = false;
     var visibility_status = 'visible';
     var ajax_calls;
+    var isAgentOnline;
 
     /*
     * ----------------------------------------------------------
@@ -1819,6 +1820,7 @@
         default_agent: null,
         default_tags: null,
         offline_message_set: false,
+        agent_offline_message_set: false,
 
         // Send a message
         sendMessage: function (user_id = -1, message = '', attachments = [], onSuccess = false, payload = false, conversation_status_code = false) {
@@ -2127,6 +2129,7 @@
                 if (!active && (typeof SB_WP_WAITING_LIST !== ND || CHAT_SETTINGS.visitors_registration || CHAT_SETTINGS.welcome || CHAT_SETTINGS.subscribe || tickets) && (!tickets || !CHAT_SETTINGS.tickets_registration_required)) {
                     this.addUserAndLogin(() => {
                         this.welcome();
+                        // this.welcome_offline();
                         this.subscribe();
                         SBApps.woocommerce.waitingList();
                         this.finalizeInit();
@@ -2140,6 +2143,7 @@
                     chat_header.find('.sb-title').html(`${sb_('Hello')} ${activeUser().nameBeautified}!`);
                 }
                 this.welcome();
+                // this.welcome_offline();
                 this.subscribe();
                 if (!SBPusher.active) {
                     setInterval(() => {
@@ -2211,6 +2215,7 @@
                 $('body').addClass('sb-chat-open');
                 if (CHAT_SETTINGS.welcome_trigger == 'open') {
                     this.welcome();
+                    // this.welcome_offline();
                 }
                 SBApps.martfury.privateChat();
                 this.calculateLabelDates();
@@ -2694,7 +2699,14 @@
                 if (agent) {
                     this.agent_id = agent.user_id;
                     this.headerReset();
-                    chat_header.addClass('sb-header-agent').attr('data-agent-id', this.agent_id).html(`<div class="sb-dashboard-btn sb-icon-arrow-left"></div><div class="sb-profile"><img loading="lazy" src="${agent['profile_image']}" /><div><span class="sb-name">${agent['full_name']}</span><span class="sb-status">${sb_('Away')}</span></div><i class="sb-icon sb-icon-close ${CHAT_SETTINGS.close_chat ? 'sb-close-chat' : 'sb-responsive-close-btn'}"></i></div><div class="sb-label-date-top"></div>`);
+                    if (!tickets && (CHAT_SETTINGS.welcome_trigger != 'open' || this.chat_open) && ((!isAgentOnline || !CHAT_SETTINGS.office_hours) && CHAT_SETTINGS.welcome_disable_office_hours) && CHAT_SETTINGS.welcome && activeUser()) {
+                    // if (!tickets && (CHAT_SETTINGS.welcome_trigger != 'open' || this.chat_open) && ((!agents_online || !CHAT_SETTINGS.office_hours) && CHAT_SETTINGS.welcome_disable_office_hours) && CHAT_SETTINGS.welcome && activeUser()) {
+                        chat_header.addClass('sb-header-agent').attr('data-agent-id', this.agent_id).html(`<div class="sb-dashboard-btn sb-icon-arrow-left"></div><div class="sb-profile"><img loading="lazy" src="${agent['profile_image']}" /><div><span class="sb-name">${agent['full_name']}</span></div><i class="sb-icon sb-icon-close ${CHAT_SETTINGS.close_chat ? 'sb-close-chat' : 'sb-responsive-close-btn'}"></i></div><div class="sb-label-date-top"></div>`);
+                    }
+                    else {
+                        chat_header.addClass('sb-header-agent').attr('data-agent-id', this.agent_id).html(`<div class="sb-dashboard-btn sb-icon-arrow-left"></div><div class="sb-profile"><img loading="lazy" src="${agent['profile_image']}" /><div><span class="sb-name">${agent['full_name']}</span><span class="sb-status">${sb_('Away')}</span></div><i class="sb-icon sb-icon-close ${CHAT_SETTINGS.close_chat ? 'sb-close-chat' : 'sb-responsive-close-btn'}"></i></div><div class="sb-label-date-top"></div>`);
+                    }
+                    // chat_header.addClass('sb-header-agent').attr('data-agent-id', this.agent_id).html(`<div class="sb-dashboard-btn sb-icon-arrow-left"></div><div class="sb-profile"><img loading="lazy" src="${agent['profile_image']}" /><div><span class="sb-name">${agent['full_name']}</span><span class="sb-status">${sb_('Away')}</span></div><i class="sb-icon sb-icon-close ${CHAT_SETTINGS.close_chat ? 'sb-close-chat' : 'sb-responsive-close-btn'}"></i></div><div class="sb-label-date-top"></div>`);
                     chat_status = chat_header.find('.sb-status');
                     this.updateUsersActivity();
                     label_date = chat_header.find('.sb-label-date-top');
@@ -3359,35 +3371,93 @@
 
         // Welcome message
         welcome: function () {
-            if (!tickets && (CHAT_SETTINGS.welcome_trigger != 'open' || this.chat_open) && (CHAT_SETTINGS.office_hours || !CHAT_SETTINGS.welcome_disable_office_hours) && CHAT_SETTINGS.welcome && !storage('welcome') && activeUser()) {
-                SBF.ajax({
-                    function: 'get-block-setting',
-                    value: 'welcome'
-                }, (response) => {
-                    setTimeout(() => {
-                        if (CHAT_SETTINGS.dialogflow_welcome) {
-                            if (this.conversation === false) {
-                                this.newConversation(3, -1, '', [], null, null, function () {
-                                    SBApps.dialogflow.welcome(response.open, response.sound)
-                                });
+            SBF.ajax({
+                function: 'agents-online',
+            }, (response) => {
+                isAgentOnline = response;
+                // console.log('isAgentOnline',isAgentOnline);
+                // console.log('CHAT_SETTINGS.office_hours',CHAT_SETTINGS.office_hours);
+                // $('div input[required], div textarea[required], div select[required]').each(function() {
+                //     var span = $(this).siblings('span');
+                //     // Check if span contains child span with class 'asterisk'
+                //     if (span.length > 0 && !span.find('span.asterisk').length) {
+                //         span.append(' <span class="asterisk" style="color: red;">*</span>');
+                //     }
+                // });
+                // if(!CHAT_SETTINGS.office_hours) {
+                //     $('#message').show();
+                // }
+                // else {
+                //     $('#message').hide();
+                // }
+                if(!isAgentOnline || !CHAT_SETTINGS.office_hours) {
+                    // console.log('condition satisfied');
+                    $(".sb-header-type-brand .sb-title").text("Contact us...");
+                    $(".sb-rich-registration .sb-buttons .sb-submit").text("EMAIL US");
+                    $(".sb-brand svg").replaceWith('<svg viewBox="90 100 375 375"><g id="envelope-o"><path class="designstudio-icon" fill="#ffffff" d="M1664 32v768q-32 -36 -69 -66q-268 -206 -426 -338q-51 -43 -83 -67t-86.5 -48.5t-102.5 -24.5h-1h-1q-48 0 -102.5 24.5t-86.5 48.5t-83 67q-158 132 -426 338q-37 30 -69 66v-768q0 -13 9.5 -22.5t22.5 -9.5h1472q13 0 22.5 9.5t9.5 22.5zM1664 1083v11v13.5t-0.5 13 t-3 12.5t-5.5 9t-9 7.5t-14 2.5h-1472q-13 0 -22.5 -9.5t-9.5 -22.5q0 -168 147 -284q193 -152 401 -317q6 -5 35 -29.5t46 -37.5t44.5 -31.5t50.5 -27.5t43 -9h1h1q20 0 43 9t50.5 27.5t44.5 31.5t46 37.5t35 29.5q208 165 401 317q54 43 100.5 115.5t46.5 131.5z M1792 1120v-1088q0 -66 -47 -113t-113 -47h-1472q-66 0 -113 47t-47 113v1088q0 66 47 113t113 47h1472q66 0 113 -47t47 -113z" transform="scale(.175, -.175) translate(800, -2250)"></path></g></svg>');
+                }
+                if(CHAT_SETTINGS.office_hours) {
+                    if(isAgentOnline) {
+                        // $('#message').hide();
+                        $('#message').remove();
+                    } else {
+                        $('.sb-text').remove();
+                    }
+                } else {
+                    $('.sb-text').remove();
+                }
+                if (!tickets && (CHAT_SETTINGS.welcome_trigger != 'open' || this.chat_open) && ((CHAT_SETTINGS.office_hours && isAgentOnline) || !CHAT_SETTINGS.welcome_disable_office_hours) && CHAT_SETTINGS.welcome && !storage('welcome') && activeUser()) {
+                // if (!tickets && (CHAT_SETTINGS.welcome_trigger != 'open' || this.chat_open) && (CHAT_SETTINGS.office_hours || !CHAT_SETTINGS.welcome_disable_office_hours) && CHAT_SETTINGS.welcome && !storage('welcome') && activeUser()) {
+                    SBF.ajax({
+                        function: 'get-block-setting',
+                        value: 'welcome'
+                    }, (response) => {
+                        setTimeout(() => {
+                            if (CHAT_SETTINGS.dialogflow_welcome) {
+                                if (this.conversation === false) {
+                                    this.newConversation(3, -1, '', [], null, null, function () {
+                                        SBApps.dialogflow.welcome(response.open, response.sound)
+                                    });
+                                } else {
+                                    SBApps.dialogflow.welcome(response.open, response.sound);
+                                }
                             } else {
-                                SBApps.dialogflow.welcome(response.open, response.sound);
+                                this.sendMessage(bot_id, response.message, [], false, false, 3);
+                                if (response.open) {
+                                    this.start();
+                                }
+                                if (response.sound) {
+                                    this.audio.play();
+                                }
                             }
-                        } else {
-                            this.sendMessage(bot_id, response.message, [], false, false, 3);
-                            if (response.open) {
-                                this.start();
-                            }
-                            if (response.sound) {
-                                this.audio.play();
-                            }
-                        }
-                        this.skip = true;
-                        SBF.event('SBWelcomeMessage');
-                    }, parseInt(tickets ? 0 : CHAT_SETTINGS.welcome_delay));
-                    storage('welcome', true);
-                });
-            }
+                            this.skip = true;
+                            SBF.event('SBWelcomeMessage');
+                        }, parseInt(tickets ? 0 : CHAT_SETTINGS.welcome_delay));
+                        storage('welcome', true);
+                    });
+                }
+                if (!tickets && (CHAT_SETTINGS.welcome_trigger != 'open' || this.chat_open) && (!isAgentOnline || !CHAT_SETTINGS.office_hours) && CHAT_SETTINGS.welcome_disable_office_hours && CHAT_SETTINGS.welcome && activeUser()) {
+                // if (!tickets && (CHAT_SETTINGS.welcome_trigger != 'open' || this.chat_open) && (!agents_online || !CHAT_SETTINGS.office_hours) && CHAT_SETTINGS.welcome_disable_office_hours && CHAT_SETTINGS.welcome && activeUser()) {
+                    $('.sb-editor .sb-textarea').hide();
+                    $('.sb-status').hide();
+                    let message = CHAT_SETTINGS.timetable_message;
+                    let offline_message_sent;
+                    if(this.conversation) {
+                        offline_message_sent = this.conversation.searchMessages(message[1], true);
+                        offline_message_sent = offline_message_sent.length ? offline_message_sent : false;
+                        if (offline_message_sent) {
+                            let last_agent_message = this.conversation.getLastUserMessage(false, true);
+                            offline_message_sent = !last_agent_message || last_agent_message.get('index') < offline_message_sent[offline_message_sent.length - 1].get('index');
+                        }                
+                    }
+                    if (!offline_message_sent) {
+                        // this.sendMessage(bot_id, message[1]);
+                        this.sendMessage(bot_id, message[1], [], false, false, 3);
+                    }
+                }
+
+            });
+            
         },
 
         // Subscribe message
@@ -3424,28 +3494,28 @@
                             this.offline_message_set = true;
                         }
                         break;
-                    case 'info':
-                        if (!this.offline_message_set) {
-                            chat.prepend(`<div class="sb-notify-message sb-rich-cnt"><div class="sb-cnt"><div class="sb-message">${message[0] ? `<b>${message[0]}</b> ` : ''}${message[1]}</div></div></div>`);
-                            main.addClass('sb-notify-active');
-                            this.offline_message_set = true;
-                        }
-                        break;
-                    default:
-                        setTimeout(() => {
-                            if (this.conversation) {
-                                let offline_message = CHAT_SETTINGS.timetable_hide ? `${message[0] ? `*${message[0]}*\n` : ''}${message[1]}` : '[timetable]';
-                                let offline_message_sent = this.conversation.searchMessages(offline_message, true);
-                                offline_message_sent = offline_message_sent.length ? offline_message_sent : false;
-                                if (offline_message_sent) {
-                                    let last_agent_message = this.conversation.getLastUserMessage(false, true);
-                                    offline_message_sent = !last_agent_message || last_agent_message.get('index') < offline_message_sent[offline_message_sent.length - 1].get('index');
-                                }
-                                if (!offline_message_sent) {
-                                    this.sendMessage(bot_id, offline_message);
-                                }
-                            }
-                        }, 5000);
+                    // case 'info':
+                    //     if (!this.offline_message_set) {
+                    //         chat.prepend(`<div class="sb-notify-message sb-rich-cnt"><div class="sb-cnt"><div class="sb-message">${message[0] ? `<b>${message[0]}</b> ` : ''}${message[1]}</div></div></div>`);
+                    //         main.addClass('sb-notify-active');
+                    //         this.offline_message_set = true;
+                    //     }
+                    //     break;
+                    // default:
+                    //     setTimeout(() => {
+                    //         if (this.conversation) {
+                    //             let offline_message = CHAT_SETTINGS.timetable_hide ? `${message[0] ? `*${message[0]}*\n` : ''}${message[1]}` : '[timetable]';
+                    //             let offline_message_sent = this.conversation.searchMessages(offline_message, true);
+                    //             offline_message_sent = offline_message_sent.length ? offline_message_sent : false;
+                    //             if (offline_message_sent) {
+                    //                 let last_agent_message = this.conversation.getLastUserMessage(false, true);
+                    //                 offline_message_sent = !last_agent_message || last_agent_message.get('index') < offline_message_sent[offline_message_sent.length - 1].get('index');
+                    //             }
+                    //             if (!offline_message_sent) {
+                    //                 this.sendMessage(bot_id, offline_message);
+                    //             }
+                    //         }
+                    //     }, 5000);
                 }
             }
         },
@@ -3509,6 +3579,7 @@
                 settings: settings,
                 settings_extra: settings.extra
             }, (response) => {
+               
                 SBF.loginCookie(response[1]);
                 activeUser(new SBUser(response[0]));
                 SBPusher.start();
@@ -3552,30 +3623,35 @@
 
         // Archive a conversation and close it
         closeChat: function (update_conversation_status = true) {
+            $(".sb-body").addClass("close-chat");
             let id = this.conversation.id;
-            SBChat.clear();
-            if (update_conversation_status) {
-                SBF.ajax({
-                    function: 'update-conversation-status',
-                    conversation_id: id,
-                    status_code: 3
-                }, () => {
-                    close();
-                });
-            } else {
-                close();
-            }
-            function close() {
-                main.find(`li[data-conversation-id="${id}"]`).remove();
-                force_action = 'new-conversation';
-                SBChat.clear();
-                storage('open-conversation', '');
-                storage('welcome', '');
-                activeUser().removeConversation(id);
-                if (!CHAT_SETTINGS.disable_dashboard) {
-                    SBChat.showDashboard();
-                }
-            }
+            let userid = this.conversation.details.user_id;
+            chat.html('<div class="sb-dialog-box sb-lightbox sb-active" data-type="alert" id=""><div class="sb-title"></div><p>Are you sure you want to close this chat?</p><div><a class="sb-confirm sb-btn" data-user-id="'+userid+'" data-conversation-id="'+id+'">Confirm</a><a class="sb-cancel sb-btn" data-conversation-id="'+this.conversation.id+'" >Cancel</a></div></div>');
+            // console.log('close chat called');
+            // let id = this.conversation.id;
+            // SBChat.clear();
+            // if (update_conversation_status) {
+            //     SBF.ajax({
+            //         function: 'update-conversation-status',
+            //         conversation_id: id,
+            //         status_code: 3
+            //     }, () => {
+            //         close();
+            //     });
+            // } else {
+            //     close();
+            // }
+            // function close() {
+            //     main.find(`li[data-conversation-id="${id}"]`).remove();
+            //     force_action = 'new-conversation';
+            //     SBChat.clear();
+            //     storage('open-conversation', '');
+            //     storage('welcome', '');
+            //     activeUser().removeConversation(id);
+            //     if (!CHAT_SETTINGS.disable_dashboard) {
+            //         SBChat.showDashboard();
+            //     }
+            // }
         },
 
         // Automations
@@ -4439,6 +4515,7 @@
             let settings = {};
             $(area).find('.sb-input[id]').each((i, element) => {
                 settings[$(element).attr('id')] = this.get(element);
+                // console.log('this.get(element)',this.get(element));
             });
             return settings;
         },
@@ -4459,7 +4536,7 @@
                     let prepend = select.val();
                     return [SBF.escape((select.is('select') || select.is('input') ? prepend : input.find('> div').html()) + input.find('input[type="tel"]').val()), name];
                 default:
-                    let target = input.find('input');
+                    let target = input.find('input,textarea');
                     return [SBF.escape(target.length ? target.val() : input.find('[data-value]').attr('data-value')), name];
             }
         },
@@ -4539,12 +4616,51 @@
         // Return the registration error message
         getRegistrationErrorMessage(area_or_response, type = 'validation') {
             if (type == 'response') return SBF.errorValidation(area_or_response, 'duplicate-email') ? 'This email is already in use. Please use another email.' : (SBF.errorValidation(area_or_response, 'duplicate-phone') ? 'This phone number is already in use. Please use another number.' : (SBF.errorValidation(area_or_response, 'invalid-envato-purchase-code') ? 'Invalid Envato purchase code.' : 'Error. Please check your information and try again.'))
-            let name = $(area_or_response).find('#last_name').length ? 'First name, last name' : 'Name';
-            let phone = $(area_or_response).find('#phone [required]').length ? ', phone number' : '';
-            let email = $(area_or_response).find('#email').length ? ', email' : '';
+            let fname = $(area_or_response).find('#first_name input').val();
+            // let lname = $(area_or_response).find('#last_name input').val();
+            let phone = $(area_or_response).find('#phone input').val();
+            let phoneisreqired = $('#phone input').prop('required');
+            let email = $(area_or_response).find('#email input').val();
+            let message = $(area_or_response).find('#message textarea').val();
             let password = $(area_or_response).find('#password').length ? ', and a password (8 character minimum)' : '';
-            return `${name}${email}${phone}${password} ${(email + phone + password) ? 'are' : 'is'} required.`;
-        }
+            
+            if(message !== undefined ) {
+                if(!fname|| !email || !message) {
+                    return "Name, email and message is required";
+                }
+                else if(!this.isValidEmail(email)) {
+                    return "Invalid email address";
+                }
+                else if(!this.isValidPhone(phone)) {
+                    return "Invalid phone number";
+                }
+            }
+            else if(phoneisreqired && !phone) {
+                if(!phone || !fname || !email) {
+                    return "Name, email and phone is required";
+                }
+            }
+            else if(!fname || !email) {
+                return "Name and email is required";
+            }
+            else if(!this.isValidEmail(email)) {
+                return "Invalid email address";
+            }
+            else if(!this.isValidPhone(phone)) {
+                return "Invalid phone number";
+            }
+        },
+
+        isValidEmail: function(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        },
+          
+        isValidPhone: function(phone) {
+            const phoneRegex = /^[0-9]{6,10}$/; 
+            return phoneRegex.test(phone);
+          }
+
     }
     window.SBForm = SBForm;
 
@@ -4995,6 +5111,7 @@
     */
 
     $(document).ready(function () {
+        $(".sb-body").removeClass("close-chat");
         main = $('.sb-admin, .sb-admin-start');
         if (main.length) {
             admin = true;
@@ -5155,6 +5272,23 @@
                             }
                         }, 3000);
                     }
+
+                    SBF.ajax({
+                        function: 'agents-online',
+                    }, (response) => {
+                        isAgentOnline = response;
+                        // console.log('isAgentOnline:  ',isAgentOnline);
+                        // console.log('CHAT_SETTINGS.office_hours: ',CHAT_SETTINGS.office_hours);
+                        if(isAgentOnline && CHAT_SETTINGS.office_hours) {
+                            $('#message').remove();
+                            // $(".sb-body").removeClass("close-chat");
+                            SBChat.open(!SBChat.chat_open);
+                        }
+                        else {
+                            $('.sb-text').remove();
+                        }
+                    });
+
                     setAudio();
                     SBApps.aecommerce.cart();
                     setTimeout(() => {
@@ -5202,6 +5336,63 @@
         $(main).on('click', function () {
             if (!SBChat.tab_active) {
                 SBF.visibilityChange();
+            }
+        });
+
+        $(main).on('click', '.sb-confirm', function () {
+            var userid = $('.sb-active div.sb-list.sb-active .sb-confirm').attr('data-user-id');
+            var convid = $('.sb-active div.sb-list.sb-active .sb-confirm').attr('data-conversation-id');
+            let agent = SBChat.conversation.getLastUserMessage(false, true);
+            if(agent) {
+                chat.html('<div class="rating"><div class="star1">please give us rating</div><span class="star" data-value="1" data-user-id="'+userid+'" data-conversation-id="'+convid+'">&#9733;</span><span class="star" data-value="2" data-user-id="'+userid+'" data-conversation-id="'+convid+'">&#9733;</span><span class="star" data-value="3" data-user-id="'+userid+'" data-conversation-id="'+convid+'">&#9733;</span><span class="star" data-value="4" data-user-id="'+userid+'" data-conversation-id="'+convid+'">&#9733;</span><span class="star" data-value="5" data-user-id="'+userid+'" data-conversation-id="'+convid+'">&#9733;</span><input type="hidden" name="rating" id="rating" value="0"></div>')
+            }else {
+                SBF.ajax({
+                    function: 'close-chat',
+                    user_id: userid,
+                    convid: convid,
+                });
+                SBF.reset();
+                SBChat.open(false);
+            }
+        });
+
+        $(main).on('click', '.sb-cancel', function () {
+            var conversationId = $('.sb-active div.sb-list.sb-active .sb-cancel').attr('data-conversation-id');
+            SBChat.openConversation(conversationId);
+            $(".sb-body").removeClass("close-chat");
+        });
+
+        $(main).on('click', '.star', function () {
+            var value = $(this).attr('data-value');
+            var user_id = $(this).attr('data-user-id');
+            var convid = $(this).attr('data-conversation-id');
+            SBF.ajax({
+                function: 'add-agent-rating',
+                user_id: user_id,
+                rating: value,
+                convid: convid,
+            }
+            // , (response) => {
+            //     console.log(response);
+            // }
+            );
+            SBF.reset();
+            SBChat.open(false);
+        });
+
+        $(main).on('mouseover','.star', function () {
+            var value = $(this).attr('data-value');
+            main.find('.star').removeClass('hover');
+            for (var i = 0; i <= value; i += 0.5) {
+                main.find('.star[data-value="' + i + '"]').addClass('hover');
+            }
+          });
+        
+        $(main).on('mouseout','.star', function () {
+            main.find('.star').removeClass('hover');
+            var currentValue = $('.rating').attr('data-rating');
+            for (var i = 0; i <= currentValue; i += 0.5) {
+                main.find('.star[data-value="' + i + '"]').addClass('hover');
             }
         });
 
@@ -5293,6 +5484,7 @@
 
         // Open the chat
         $('body').on('click', '.sb-chat-btn,.sb-responsive-close-btn,#sb-open-chat,.sb-open-chat', function () {
+            $(".sb-body").removeClass("close-chat");
             SBChat.open(!SBChat.chat_open);
         });
 

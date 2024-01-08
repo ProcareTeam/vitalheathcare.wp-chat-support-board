@@ -5,7 +5,7 @@
  * API.PHP
  * ==========================================================
  *
- * API main file. This file listens the POST queries and return the result. © 2017-2023 board.support. All rights reserved.
+ * API main file. This file listens the POST queries and return the result. ï¿½ 2017-2023 board.support. All rights reserved.
  *
  */
 
@@ -288,6 +288,7 @@ function sb_process_api() {
         'import-settings' => ['file_url'],
         'count-conversations' => [],
         'check-conversations-assignment' => ['conversation_ids'],
+        'update-users-last-activity' => ['user_id', 'return_user_id', 'check_slack'],
     ];
 
     if (!isset($functions[$function_name])) {

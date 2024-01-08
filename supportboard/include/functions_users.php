@@ -123,6 +123,15 @@ function sb_logout() {
     return true;
 }
 
+function add_agent_rating($user_id, $rating, $convid, $chatStatus) {
+    sb_webhooks('SBAgentRating', ['user_id' => $user_id, 'conversation_id' => $convid, 'rating' => $rating, 'chatStatus' => $chatStatus]);
+    return sb_db_query('UPDATE sb_users SET rating =  "' . sb_db_escape($rating) . '", conv_id =  "' . sb_db_escape($convid) . '" WHERE id = ' . $user_id);
+}
+
+function close_chat($user_id, $convid, $chatStatus) {
+    sb_webhooks('SBCloseChat', ['user_id' => $user_id, 'conversation_id' => $convid, 'chatStatus' => $chatStatus]);
+}
+
 function sb_get_active_user($login_data = false, $database = false, $login_app = false, $user_token = false) {
     global $SB_LOGIN;
     $return = false;
@@ -396,7 +405,38 @@ function sb_add_new_user_extra($user_id, $settings) {
 function sb_add_user_and_login($settings, $settings_extra, $hash_password = true) {
     $response = sb_add_user($settings, $settings_extra, $hash_password);
     if (is_numeric($response)) {
-        $token = sb_db_get('SELECT token FROM sb_users WHERE id = ' . $response);
+        $token = sb_db_get('SELECT token, first_name, last_name, email FROM sb_users WHERE id = ' . $response);
+        // $token = sb_db_get('SELECT token FROM sb_users WHERE id = ' . $response);
+        $conversation = sb_db_get('SELECT id FROM sb_conversations WHERE user_id='. $response);
+        $user = $user ? $user : (sb_is_agent() ? sb_get_user_from_conversation($response) : sb_get_active_user());
+        $user_name = $token['first_name']." ".$token['last_name'];
+        $recipient_email = $token['email'];
+        $attachments= false;
+        $is_online = false;
+        $is_office_hours = sb_office_hours();
+        $recipients = 'agents';
+        $message = sb_db_get('SELECT value FROM sb_users_data WHERE user_id='. sb_db_escape($response, true).' and slug="message"');
+        $phone = sb_db_get('SELECT value FROM sb_users_data WHERE user_id='. sb_db_escape($response, true).' and slug="phone"');
+
+        if($conversation) {
+            $conversation1 = sb_db_get('SELECT agent_id, department FROM sb_conversations WHERE user_id = ' . sb_db_escape($response, true));
+            if ($conversation1['department']) {
+                $recipients = 'department-' . $conversation1['department'];
+            } else if ($conversation1['agent_id']) {
+                $recipients = $conversation1['agent_id'];
+                $is_online = sb_is_user_online($recipients);
+            }
+        }
+
+        if( $is_office_hours !== true || !sb_agents_online()) {
+            sb_email_create($recipients, $user_name, $user['profile_image'], $message['value'], $attachments, false,$response, $recipient_email, $phone['value']);
+            // error_log('email:  '.$recipient_email);
+            $suffix = 'user';
+            $settings = sb_get_multilingual_setting('emails', 'email-' . $suffix, sb_get_user_language(is_numeric($recipient_id) ? $recipient_id : false));
+            $email = sb_email_create_content($settings['email-' . $suffix . '-subject'], $settings['email-' . $suffix . '-content'], $attachments, ['conversation_url_parameter' => ($recipient_email && $response ? ('?conversation=' . $response . '&token=' . $token['token']) : ''), 'message' =>  $message['value'], 'recipient_name' => $user_name, 'sender_name' => $sender_name, 'sender_profile_image' => $sender_profile_image, 'conversation_id' => $response]);
+            sb_email_send($recipient_email, $email[0], $email[1]);
+        }
+
         return sb_login('', '', $response, $token['token']);
     }
     return $response;

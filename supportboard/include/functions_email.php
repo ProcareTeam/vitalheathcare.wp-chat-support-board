@@ -31,7 +31,7 @@
  *
  */
 
-function sb_email_create($recipient_id, $sender_name, $sender_profile_image, $message, $attachments = [], $department = false, $conversation_id = false) {
+function sb_email_create($recipient_id, $sender_name, $sender_profile_image, $message, $attachments = [], $department = false, $conversation_id = false, $sender_email = false, $sender_phone = false) {
     $recipient = false;
     $recipient_name = '';
     $recipient_email = '';
@@ -70,7 +70,7 @@ function sb_email_create($recipient_id, $sender_name, $sender_profile_image, $me
     }
     $suffix = sb_is_agent($recipient_user_type) ? 'agent' : 'user';
     $settings = sb_get_multilingual_setting('emails', 'email-' . $suffix, sb_get_user_language(is_numeric($recipient_id) ? $recipient_id : false));
-    $email = sb_email_create_content($settings['email-' . $suffix . '-subject'], $settings['email-' . $suffix . '-content'], $attachments, ['conversation_url_parameter' => ($recipient && $conversation_id ? ('?conversation=' . $conversation_id . '&token=' . $recipient['token']) : ''), 'message' => $message, 'recipient_name' => $recipient_name, 'sender_name' => $sender_name, 'sender_profile_image' => $sender_profile_image, 'conversation_id' => $conversation_id]);
+    $email = sb_email_create_content($settings['email-' . $suffix . '-subject'], $settings['email-' . $suffix . '-content'], $attachments, ['conversation_url_parameter' => ($recipient && $conversation_id ? ('?conversation=' . $conversation_id . '&token=' . $recipient['token']) : ''), 'message' => $message, 'recipient_name' => $recipient_name, 'sender_name' => $sender_name, 'sender_email' => $sender_email, 'sender_phone' => $sender_phone, 'sender_profile_image' => $sender_profile_image, 'conversation_id' => $conversation_id]);
     $piping = sb_email_piping_suffix($conversation_id);
     $piping_delimiter = !empty($piping) && sb_get_multi_setting('email-piping', 'email-piping-delimiter') ? ('<div style="color:#b5b5b5">### ' . sb_('Please type your reply above this line') . ' ###</div><br><br>') : '';
     sb_webhooks('SBEmailSent', ['recipient_id' => $recipient_id, 'message' => $message, 'attachments' => $attachments]);
@@ -88,7 +88,8 @@ function sb_email_create_content($subject, $body, $attachments, $replacements) {
         $body = 'Hello {recipient_name}!<br />{message}{attachments}';
     }
     $subject = str_replace(['{recipient_name}', '{sender_name}'], [$replacements['recipient_name'], sb_isset($replacements, 'sender_name')], $subject);
-    $body = str_replace(['{conversation_url_parameter}', '{recipient_name}', '{sender_name}', '{sender_profile_image}', '{message}', '{attachments}', '{conversation_link}'], ['conversation_url_parameter' => sb_isset($replacements, 'conversation_url_parameter', ''), $replacements['recipient_name'], sb_isset($replacements, 'sender_name'), sb_isset($replacements, 'sender_profile_image'), $replacements['message'], sb_email_attachments_code($attachments), (SB_URL . '/admin.php' . (isset($replacements['conversation_id']) ? '?conversation=' . $replacements['conversation_id'] : ''))], $body);
+    $body = str_replace(['{conversation_url_parameter}', '{recipient_name}', '{sender_name}', '{sender_email}', '{sender_phone}', '{sender_profile_image}', '{message}', '{attachments}', '{conversation_link}'], ['conversation_url_parameter' => sb_isset($replacements, 'conversation_url_parameter', ''), $replacements['recipient_name'], sb_isset($replacements, 'sender_name'), sb_isset($replacements, 'sender_email'), sb_isset($replacements, 'sender_phone'), sb_isset($replacements, 'sender_profile_image'), $replacements['message'], sb_email_attachments_code($attachments), (SB_URL . '/admin.php' . (isset($replacements['conversation_id']) ? '?conversation=' . $replacements['conversation_id'] : ''))], $body);
+    // $body = str_replace(['{conversation_url_parameter}', '{recipient_name}', '{sender_name}', '{sender_email}', '{sender_phone}', '{sender_profile_image}', '{message}', '{attachments}', '{conversation_link}'], ['conversation_url_parameter' => sb_isset($replacements, 'conversation_url_parameter', ''), $replacements['recipient_name'], sb_isset($replacements, 'sender_name'), sb_isset($replacements, 'sender_profile_image'), $replacements['message'], sb_email_attachments_code($attachments), (SB_URL . '/admin.php' . (isset($replacements['conversation_id']) ? '?conversation=' . $replacements['conversation_id'] : ''))], $body);
     return [$subject, $body];
 }
 

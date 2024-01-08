@@ -1551,7 +1551,7 @@ function sb_logs($string, $user = false) {
 }
 
 function sb_webhooks($function_name, $parameters) {
-    $names = ['SBSMSSent' => 'sms-sent', 'SBLoginForm' => 'login', 'SBRegistrationForm' => 'registration', 'SBUserDeleted' => 'user-deleted', 'SBMessageSent' => 'message-sent', 'SBBotMessage' => 'bot-message', 'SBEmailSent' => 'email-sent', 'SBNewMessagesReceived' => 'new-message', 'SBNewConversationReceived' => 'new-conversation', 'SBNewConversationCreated' => 'new-conversation-created', 'SBActiveConversationStatusUpdated' => 'conversation-status-updated', 'SBSlackMessageSent' => 'slack-message-sent', 'SBMessageDeleted' => 'message-deleted', 'SBRichMessageSubmit' => 'rich-message', 'SBNewEmailAddress' => 'new-email-address'];
+    $names = ['SBSMSSent' => 'sms-sent', 'SBLoginForm' => 'login', 'SBRegistrationForm' => 'registration', 'SBUserDeleted' => 'user-deleted', 'SBMessageSent' => 'message-sent', 'SBBotMessage' => 'bot-message', 'SBEmailSent' => 'email-sent', 'SBNewMessagesReceived' => 'new-message', 'SBNewConversationReceived' => 'new-conversation', 'SBNewConversationCreated' => 'new-conversation-created', 'SBActiveConversationStatusUpdated' => 'conversation-status-updated', 'SBSlackMessageSent' => 'slack-message-sent', 'SBMessageDeleted' => 'message-deleted', 'SBRichMessageSubmit' => 'rich-message', 'SBNewEmailAddress' => 'new-email-address', 'SBAgentRating' => 'agent-rating', 'SBCloseChat' => 'close-chat'];
     $webhook_name = sb_isset($names, $function_name);
     if ($webhook_name) {
         $webhooks = sb_get_setting('webhooks');
