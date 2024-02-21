@@ -51,6 +51,8 @@
     var visibility_status = 'visible';
     var ajax_calls;
     var isAgentOnline;
+    var isclosedbtn = localStorage.getItem('isclosedbtn');
+    isclosedbtn = isclosedbtn === 'true';
 
     /*
     * ----------------------------------------------------------
@@ -5279,7 +5281,10 @@
                         isAgentOnline = response;
                         // console.log('isAgentOnline:  ',isAgentOnline);
                         // console.log('CHAT_SETTINGS.office_hours: ',CHAT_SETTINGS.office_hours);
-                        if(isAgentOnline && CHAT_SETTINGS.office_hours) {
+                        var isclosed = localStorage.getItem('isclosedbtn');
+                        // console.log("isclosed", isclosed)
+                        if(isAgentOnline && CHAT_SETTINGS.office_hours && isclosed === false) {
+                            // console.log("check", isclosed)
                             $('#message').remove();
                             // $(".sb-body").removeClass("close-chat");
                             SBChat.open(!SBChat.chat_open);
@@ -5484,6 +5489,10 @@
 
         // Open the chat
         $('body').on('click', '.sb-chat-btn,.sb-responsive-close-btn,#sb-open-chat,.sb-open-chat', function () {
+            isclosedbtn = !isclosedbtn; // Toggle the value
+            // console.log("New value:", isclosedbtn); // Output the new value
+            // Store the new value in localStorage
+            localStorage.setItem('isclosedbtn', isclosedbtn);
             $(".sb-body").removeClass("close-chat");
             SBChat.open(!SBChat.chat_open);
         });
